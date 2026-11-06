@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Финиш</title>
+  <!-- Как приложение на iPhone -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Финиш">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#F3F4EF">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="icon" href="icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ===== Палитра из прототипа ===== */
+    :root {
+      --bg: #F3F4EF;      /* светлый фон */
+      --ink: #16181B;     /* графит: текст и тёмные карточки */
+      --lime: #C8F03C;    /* фирменный акцент */
+      --blue: #2457D6;    /* ссылки и второстепенный акцент */
+      --blue-soft: #E8EEFC;
+      --muted: #5B6068;   /* второстепенный текст */
+      --muted-dark: #C9CCD1;
+      --track: #34383E;   /* фон прогресс-бара */
+      --line: #E2E4DD;
+      --white: #FFFFFF;
+      --red: #D64545;
+      --head: 'Unbounded', system-ui, sans-serif;
+      --body: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: #E6E7E1; }
+    body { font-family: var(--body); color: var(--ink); -webkit-font-smoothing: antialiased; }
+    button { font-family: inherit; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; border: none; background: none; color: inherit; }
+    input { font-family: inherit; }
+
+    .phone {
+      max-width: 430px; margin: 0 auto; min-height: 100vh; background: var(--bg);
+      position: relative; padding-bottom: calc(96px + env(safe-area-inset-bottom));
+    }
+    .screen { display: none; padding: calc(24px + env(safe-area-inset-top)) 20px 16px; flex-direction: column; gap: 16px; }
+    .screen.active { display: flex; }
+
+    /* ===== Общие элементы ===== */
+    .h-title { font-family: var(--head); font-size: 22px; font-weight: 700; }
+    .small { font-size: 13px; color: var(--muted); }
+    .card { background: var(--white); border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+    .row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .link { font-size: 13px; color: var(--blue); font-weight: 600; padding: 6px 0; }
+    .btn-dark {
+      height: 52px; border-radius: 26px; background: var(--ink); color: var(--white);
+      font-weight: 600; font-size: 15px; width: 100%; transition: transform .1s;
+    }
+    .btn-lime { background: var(--lime); color: var(--ink); }
+    .btn-dark:active { transform: scale(.98); }
+    .btn-dark:disabled { opacity: .35; }
+    .icon-box { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+    label.field { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--muted); font-weight: 500; }
+    .field input {
+      height: 48px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--bg);
+      padding: 0 14px; font-size: 16px; color: var(--ink); outline: none; width: 100%;
+    }
+    .field input:focus { border-color: var(--ink); }
+
+    /* ===== Главная ===== */
+    .avatar { width: 44px; height: 44px; border-radius: 22px; background: var(--ink); color: var(--lime); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 17px; }
+    .goal { background: var(--ink); color: var(--white); border-radius: 24px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+    .goal .big { font-family: var(--head); font-size: 44px; font-weight: 700; line-height: 1; }
+    .goal .of { font-size: 16px; color: var(--muted-dark); }
+    .bar { height: 12px; background: var(--track); border-radius: 6px; overflow: hidden; }
+    .bar > div { height: 100%; width: 0; background: var(--lime); border-radius: 6px; transition: width .5s; }
+    .plan-title { font-family: var(--head); font-size: 20px; font-weight: 500; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .stat { background: var(--white); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+    .stat span { font-size: 12px; color: var(--muted); }
+    .stat b { font-size: 18px; font-weight: 700; }
+
+    .run-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+    .run-item:first-child { border-top: none; }
+    .run-km { width: 56px; height: 56px; border-radius: 14px; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 700; font-size: 17px; flex-shrink: 0; }
+    .run-km small { font-size: 10px; color: var(--muted); font-weight: 600; }
+    .run-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+    .run-info b { font-size: 15px; }
+    .tag { display: inline-block; background: var(--lime); color: var(--ink); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin-left: 6px; vertical-align: 1px; }
+    .del { width: 36px; height: 36px; border-radius: 10px; color: var(--muted); font-size: 22px; }
+    .del:hover { background: #F7E3E3; color: var(--red); }
+    .empty { text-align: center; color: var(--muted); padding: 16px 0; font-size: 14px; }
+
+    /* ===== Пробежка ===== */
+    .timer { background: var(--ink); color: var(--white); border-radius: 24px; padding: 28px 20px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+    .timer .clock { font-family: var(--head); font-size: 56px; font-weight: 700; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+    .timer .status { font-size: 13px; color: var(--muted-dark); }
+    .timer .status.live { color: var(--lime); }
+    .timer-btns { display: flex; gap: 10px; width: 100%; }
+    .timer-btns button { flex: 1; height: 52px; border-radius: 26px; font-weight: 700; font-size: 15px; }
+    .t-main { background: var(--lime); color: var(--ink); }
+    .t-sec { background: var(--track); color: var(--white); }
+    .t-sec:disabled { opacity: .35; }
+    .finish-box { display: none; width: 100%; flex-direction: column; gap: 10px; }
+    .finish-box.show { display: flex; }
+    .finish-box input { height: 52px; border-radius: 14px; border: none; background: var(--track); color: var(--white); font-size: 18px; text-align: center; outline: none; }
+    .preview { text-align: center; font-size: 14px; color: var(--muted); min-height: 18px; }
+    .preview.err { color: var(--red); }
+    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+    /* ===== План ===== */
+    .phases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .phases div { height: 6px; border-radius: 3px; background: #D5D8CF; }
+    .phases div.on { background: var(--ink); }
+    .phases div.cur { background: var(--lime); box-shadow: inset 0 0 0 1.5px var(--ink); }
+    .phase-names { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; font-size: 11px; color: var(--muted); margin-top: -10px; }
+    .phase-names span.cur { color: var(--ink); font-weight: 700; }
+    .week-nav { display: flex; align-items: center; justify-content: space-between; }
+    .week-nav > button { width: 40px; height: 40px; border-radius: 20px; background: var(--white); font-size: 20px; font-weight: 700; }
+    .week-nav > button:disabled { opacity: .3; }
+    .days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+    .day { height: 72px; border-radius: 14px; border: 2px solid var(--line); background: var(--white); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+    .day .wd { font-size: 11px; color: var(--muted); }
+    .day .n { font-weight: 700; font-size: 15px; }
+    .day.today .n { color: var(--blue); }
+    .day.sel { background: var(--lime); border-color: var(--ink); }
+    .day.sel .n { color: var(--ink); }
+    .dot { width: 8px; height: 8px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; }
+    .dot.done { width: 16px; height: 16px; border-radius: 8px; color: var(--white); }
+    .legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); }
+    .legend i { display: inline-block; width: 8px; height: 8px; border-radius: 4px; margin-right: 5px; }
+    .day-title { font-family: var(--head); font-size: 20px; font-weight: 700; }
+    .done-note { background: var(--blue-soft); color: var(--blue); border-radius: 12px; padding: 10px 12px; font-size: 14px; font-weight: 600; }
+    .btn-ghost { height: 48px; border-radius: 24px; border: 1.5px solid var(--ink); font-weight: 600; font-size: 15px; width: 100%; }
+    .wk-bar { height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+    .wk-bar div { height: 100%; background: var(--blue); border-radius: 4px; transition: width .4s; }
+    .mile { display: flex; justify-content: space-between; align-items: center; font-size: 14px; gap: 10px; }
+    .mile .ok { color: var(--blue); font-weight: 700; }
+    .mile.final { font-weight: 700; }
+
+    /* ===== Заглушки будущих экранов ===== */
+    .soon { align-items: center; text-align: center; padding-top: 80px !important; }
+    .soon .icon-box { width: 72px; height: 72px; border-radius: 20px; background: var(--white); margin-bottom: 8px; }
+
+    /* ===== Нижнее меню ===== */
+    nav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 430px; height: calc(80px + env(safe-area-inset-bottom)); background: var(--white); border-top: 1px solid var(--line);
+      display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; padding: 0 6px calc(10px + env(safe-area-inset-bottom)); z-index: 10;
+    }
+    nav button { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; color: var(--muted); padding: 6px 0; }
+    nav button.active { color: var(--ink); font-weight: 700; }
+    nav .play { width: 58px; height: 58px; border-radius: 29px; background: var(--lime); display: flex; align-items: center; justify-content: center; margin: 0 auto; }
+    nav .play.running { box-shadow: 0 0 0 4px rgba(200,240,60,.35); }
+
+    /* ===== Окно цели ===== */
+    .sheet-bg { position: fixed; inset: 0; background: rgba(22,24,27,.45); display: none; align-items: flex-end; justify-content: center; z-index: 20; }
+    .sheet-bg.show { display: flex; }
+    .sheet { background: var(--white); width: 100%; max-width: 430px; border-radius: 24px 24px 0 0; padding: 24px 20px calc(32px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 14px; }
+
+    .toast { position: fixed; top: 20px; left: 50%; transform: translate(-50%, -80px); background: var(--ink); color: var(--lime); padding: 12px 20px; border-radius: 20px; font-weight: 600; font-size: 14px; transition: transform .3s; z-index: 30; white-space: nowrap; }
+    .toast.show { transform: translate(-50%, 0); }
+  </style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- ================= ГЛАВНАЯ ================= -->
+  <section class="screen active" id="screen-main">
+    <div class="row">
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <span class="small" id="todayLabel"></span>
+        <span class="h-title" id="hello">Привет!</span>
+      </div>
+      <button class="avatar" id="avatar" onclick="openGoal()" aria-label="Профиль">А</button>
+    </div>
+
+    <div class="goal">
+      <div class="row">
+        <span style="font-size:13px;color:var(--muted-dark)" id="goalPeriod">Цель года</span>
+        <button style="font-size:13px;color:var(--lime);font-weight:600;padding:6px 0" onclick="openGoal()">Изменить</button>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <span class="big" id="goalDone">0</span>
+        <span class="of" id="goalTarget">из 1200 км</span>
+      </div>
+      <div class="bar"><div id="goalBar"></div></div>
+      <div class="row" style="font-size:13px">
+        <span style="color:var(--lime);font-weight:600" id="goalDelta"></span>
+        <span style="color:var(--muted-dark)" id="goalWeekly"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <span style="font-weight:700;font-size:16px">Сегодня по плану</span>
+        <button class="link" onclick="go('plan')">Весь план</button>
+      </div>
+      <span class="plan-title" id="todayPlan">Лёгкий бег 5 км</span>
+      <span style="font-size:14px;color:var(--muted)" id="todayPlanNote">Спокойный темп, можно разговаривать</span>
+      <button class="btn-dark" style="margin-top:4px" id="todayBtn">Начать пробежку</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><span>Неделя</span><b id="statWeek">0 км</b></div>
+      <div class="stat"><span>Серия</span><b id="statStreak">0 нед.</b></div>
+      <div class="stat"><span>Средний темп</span><b id="statPace">–</b></div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <span style="font-weight:700;font-size:16px">Последние пробежки</span>
+        <span class="small" id="runsCount"></span>
+      </div>
+      <div id="runsList"></div>
+    </div>
+
+    <div class="card" style="flex-direction:row;gap:12px;align-items:flex-start">
+      <div class="icon-box" style="width:40px;height:40px;border-radius:12px;background:var(--blue-soft)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2457D6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13a6 6 0 0 1 12 0"/><path d="M4 13h16"/><path d="M7 17h10"/></svg>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:12px;color:var(--blue);font-weight:600">Совет шефа</span>
+        <span style="font-size:14px;line-height:1.4" id="chefTip"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ПРОБЕЖКА ================= -->
+  <section class="screen" id="screen-run">
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <span class="small">Секундомер</span>
+      <span class="h-title">Пробежка</span>
+    </div>
+
+    <div class="timer">
+      <span class="status" id="timerStatus">Готов к старту</span>
+      <span class="clock" id="clock">00:00</span>
+      <div class="timer-btns" id="timerBtns">
+        <button class="t-main" id="btnStart" onclick="toggleTimer()">Старт</button>
+        <button class="t-sec" id="btnFinish" onclick="showFinish()" disabled>Финиш</button>
+      </div>
+      <div class="finish-box" id="finishBox">
+        <span style="text-align:center;font-size:14px;color:var(--muted-dark)">Сколько км пробежал? (смотри на часах)</span>
+        <input id="finishKm" type="number" step="0.01" min="0" placeholder="5,0" inputmode="decimal">
+        <span class="preview" id="finishPreview" style="color:var(--lime)"></span>
+        <div class="timer-btns">
+          <button class="t-sec" onclick="resetTimer()">Сбросить</button>
+          <button class="t-main" onclick="saveTimerRun()">Сохранить</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <span style="font-weight:700;font-size:16px">Добавить вручную</span>
+      <span class="small" style="margin-top:-6px">Если бегал с часами без телефона</span>
+      <label class="field">Дата <input id="mDate" type="date"></label>
+      <div class="grid3">
+        <label class="field">Км <input id="mKm" type="number" step="0.01" min="0" placeholder="5" inputmode="decimal"></label>
+        <label class="field">Мин <input id="mMin" type="number" min="0" placeholder="30" inputmode="numeric"></label>
+        <label class="field">Сек <input id="mSec" type="number" min="0" max="59" placeholder="0" inputmode="numeric"></label>
+      </div>
+      <span class="preview" id="mPreview"></span>
+      <button class="btn-dark" onclick="saveManualRun()">Побежал 🏃</button>
+    </div>
+  </section>
+
+  <!-- ================= БУДУЩИЕ ЭКРАНЫ ================= -->
+  <section class="screen" id="screen-plan">
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <span class="small" id="planSub">Неделя 1 из 52 · база</span>
+      <span class="h-title">План тренировок</span>
+    </div>
+
+    <div class="phases" id="phaseBars"><div></div><div></div><div></div><div></div></div>
+    <div class="phase-names" id="phaseNames"><span>База</span><span>Полумарафон</span><span>Объём</span><span>Марафон</span></div>
+
+    <div class="week-nav">
+      <button id="prevWeek" onclick="shiftWeek(-1)" aria-label="Прошлая неделя">‹</button>
+      <div style="text-align:center">
+        <div style="font-weight:700;font-size:15px" id="weekLabel"></div>
+        <button class="link" id="toToday" onclick="planWeek = currentWeek(); planSel = todayIdx(); renderPlan()">к сегодня</button>
+      </div>
+      <button id="nextWeek" onclick="shiftWeek(1)" aria-label="Следующая неделя">›</button>
+    </div>
+
+    <div class="days" id="days"></div>
+    <div class="legend"><span><i style="background:#2457D6"></i>бег</span><span><i style="background:#E07B00"></i>силовая</span><span><i style="background:#C2C6BC"></i>отдых</span></div>
+
+    <div class="card" style="padding:18px">
+      <span class="small" id="selDate"></span>
+      <span class="day-title" id="selTitle"></span>
+      <span style="font-size:14px;color:var(--muted);line-height:1.45" id="selDesc"></span>
+      <div class="done-note" id="selDone" style="display:none"></div>
+      <div id="selAction"></div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <span style="font-weight:700;font-size:16px">Эта неделя</span>
+        <span class="small" id="wkText"></span>
+      </div>
+      <div class="wk-bar"><div id="wkBar"></div></div>
+      <span class="small" id="wkNote"></span>
+    </div>
+
+    <div class="card">
+      <span style="font-weight:700;font-size:16px">Вехи на пути</span>
+      <div id="miles" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+  </section>
+
+  <section class="screen soon" id="screen-challenges">
+    <div class="icon-box"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#16181B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M12 13v4M8 20h8"/></svg></div>
+    <span class="h-title">Челленджи</span>
+    <span class="small">Скоро. Групповые вызовы с друзьями.</span>
+  </section>
+
+  <section class="screen soon" id="screen-friends">
+    <div class="icon-box"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#16181B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20a6 6 0 0 1 12 0M15 20a4 4 0 0 1 6-3.5"/></svg></div>
+    <span class="h-title">Друзья</span>
+    <span class="small">Скоро. Лента друзей и поддержка.</span>
+  </section>
+
+  <!-- ================= НИЖНЕЕ МЕНЮ ================= -->
+  <nav>
+    <button data-tab="main" class="active" onclick="go('main')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9H3z"/></svg>Главная</button>
+    <button data-tab="plan" onclick="go('plan')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>План</button>
+    <button data-tab="run" onclick="go('run')" aria-label="Пробежка">
+      <span class="play" id="navPlay"><svg width="24" height="24" viewBox="0 0 24 24" fill="#16181B"><path d="M8 5l11 7-11 7z"/></svg></span></button>
+    <button data-tab="challenges" onclick="go('challenges')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M12 13v4M8 20h8"/></svg>Челленджи</button>
+    <button data-tab="friends" onclick="go('friends')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20a6 6 0 0 1 12 0M15 20a4 4 0 0 1 6-3.5"/></svg>Друзья</button>
+  </nav>
+</div>
+
+<!-- ================= ОКНО ЦЕЛИ ================= -->
+<div class="sheet-bg" id="goalSheet" onclick="if (event.target === this) closeGoal()">
+  <div class="sheet">
+    <span class="h-title" style="font-size:20px">Цель и профиль</span>
+    <label class="field">Как тебя зовут <input id="gName" type="text" placeholder="Андрей"></label>
+    <label class="field">Цель на год, км <input id="gTarget" type="number" min="1" inputmode="numeric"></label>
+    <label class="field">Дата старта цели <input id="gStart" type="date"></label>
+    <label class="field">Забег мечты (финал плана) <input id="gRace" type="text" placeholder="Марафон Стамбула"></label>
+    <button class="btn-dark" onclick="saveGoal()">Сохранить</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ ПАМЯТЬ БРАУЗЕРА ============ */
+function load(key, fallback) {
+  try { const v = JSON.parse(localStorage.getItem(key)); return v ?? fallback; }
+  catch (e) { return fallback; }
+}
+function store(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+}
+
+/* ============ ДАННЫЕ ============ */
+const DAY = 86400000;
+function todayISO() {
+  const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 10);
+}
+function parseISO(iso) { return new Date(iso + 'T00:00:00'); }
+
+// Пробежки (подтягиваем и старые из прошлой версии)
+let runs = load('runs', []).map((r, i) => ({ id: r.id || Date.now() + i, date: r.date || todayISO(), km: r.km, min: r.min }));
+
+// Профиль и цель
+const earliest = runs.reduce((m, r) => (r.date < m ? r.date : m), todayISO());
+let settings = load('settings', { name: 'Андрей', target: load('goal', 1200), start: earliest });
+if (!settings.race) settings.race = 'Марафон Стамбула';
+let marks = load('marks', {}); // отметки «выполнено» для силовых и отдыха
+
+// Секундомер: живёт в памяти, поэтому не сбивается при перезагрузке
+let timer = load('timer', { running: false, startedAt: 0, acc: 0 });
+
+/* ============ ФОРМАТЫ ============ */
+function num(n) { return n.toLocaleString('ru-RU', { maximumFractionDigits: 1 }); }
+function pace(km, min) {
+  const s = Math.round(min * 60 / km);
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+function clockText(ms) {
+  const t = Math.floor(ms / 1000), h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = t % 60;
+  const mm = String(m).padStart(2, '0'), ss = String(s).padStart(2, '0');
+  return h ? h + ':' + mm + ':' + ss : mm + ':' + ss;
+}
+function dateText(iso, opts) { return parseISO(iso).toLocaleDateString('ru-RU', opts); }
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+/* ============ РАСЧЁТЫ ============ */
+function mondayOf(date) {
+  const d = new Date(date); d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d;
+}
+function goalStats() {
+  const start = parseISO(settings.start);
+  const end = new Date(start); end.setFullYear(end.getFullYear() + 1);
+  const today = parseISO(todayISO());
+  const inGoal = runs.filter(r => parseISO(r.date) >= start && parseISO(r.date) < end);
+  const done = inGoal.reduce((s, r) => s + r.km, 0);
+  const totalDays = (end - start) / DAY;
+  const passed = Math.min(totalDays, Math.max(1, (today - start) / DAY + 1));
+  const expected = settings.target * passed / totalDays;
+  const left = Math.max(0, settings.target - done);
+  const weeksLeft = Math.max(1, (end - today) / DAY / 7);
+  return { done, end, delta: done - expected, perWeek: left / weeksLeft, left };
+}
+function weekKm() {
+  const mon = mondayOf(new Date());
+  return runs.filter(r => parseISO(r.date) >= mon).reduce((s, r) => s + r.km, 0);
+}
+function streakWeeks() {
+  const weeks = new Set(runs.map(r => mondayOf(parseISO(r.date)).getTime()));
+  let w = mondayOf(new Date());
+  if (!weeks.has(w.getTime())) w = new Date(w.getTime() - 7 * DAY); // эта неделя ещё не потеряна
+  let n = 0;
+  while (weeks.has(w.getTime())) { n++; w = new Date(w.getTime() - 7 * DAY); }
+  return n;
+}
+
+const tips = [
+  'За 1,5 часа до пробежки: тост с бананом и мёдом. Быстрые углеводы, без тяжести в животе.',
+  'После пробежки в течение часа: белок плюс углеводы. Например, рис с курицей или творог с фруктами.',
+  'В жару бери воду с щепоткой соли и лимоном: соль возвращает то, что ушло с потом.',
+  'Перед длинной пробежкой ужинай пастой или рисом, а жирное и острое оставь на потом.',
+  'Финики — лучший бесплатный гель: 2–3 штуки на каждый час бега.',
+  'Кофе за 45 минут до старта даёт бодрость. Но не на голодный желудок.'
+];
+
+/* ============ ОТРИСОВКА ГЛАВНОЙ ============ */
+function renderMain() {
+  const name = settings.name || 'бегун';
+  document.getElementById('todayLabel').textContent = cap(new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' }));
+  document.getElementById('hello').textContent = 'Привет, ' + name;
+  document.getElementById('avatar').textContent = name.charAt(0).toUpperCase();
+
+  // Цель
+  const g = goalStats();
+  document.getElementById('goalPeriod').textContent = 'Цель года · до ' + g.end.toLocaleDateString('ru-RU');
+  document.getElementById('goalDone').textContent = num(g.done);
+  document.getElementById('goalTarget').textContent = 'из ' + num(settings.target) + ' км';
+  document.getElementById('goalBar').style.width = Math.min(100, g.done / settings.target * 100) + '%';
+  const delta = document.getElementById('goalDelta');
+  if (g.left === 0) { delta.textContent = 'Цель выполнена! 🎉'; delta.style.color = 'var(--lime)'; }
+  else if (g.delta >= 0) { delta.textContent = '+' + num(g.delta) + ' км к графику'; delta.style.color = 'var(--lime)'; }
+  else { delta.textContent = '−' + num(-g.delta) + ' км от графика'; delta.style.color = '#FFB86B'; }
+  document.getElementById('goalWeekly').textContent = g.left ? num(Math.ceil(g.perWeek)) + ' км в неделю' : '';
+
+  // Сегодня по плану: берём из плана тренировок
+  const td = dayPlan(todayISO());
+  document.getElementById('todayPlan').textContent = td.title;
+  document.getElementById('todayPlanNote').textContent = td.short;
+  const tb = document.getElementById('todayBtn');
+  if (td.type === 'run') {
+    const doneKm = kmOn(todayISO());
+    tb.textContent = doneKm ? 'Выполнено ✓ ' + num(doneKm) + ' км' : 'Начать пробежку';
+    tb.onclick = () => go(doneKm ? 'plan' : 'run');
+  } else {
+    tb.textContent = marks[todayISO()] ? 'Выполнено ✓' : 'Открыть план';
+    tb.onclick = () => go('plan');
+  }
+
+  // Статистика
+  const totKm = runs.reduce((s, r) => s + r.km, 0), totMin = runs.reduce((s, r) => s + r.min, 0);
+  document.getElementById('statWeek').textContent = num(weekKm()) + ' км';
+  document.getElementById('statStreak').textContent = streakWeeks() + ' нед.';
+  document.getElementById('statPace').textContent = totKm ? pace(totKm, totMin) : '–';
+
+  // Последние пробежки
+  const list = document.getElementById('runsList');
+  document.getElementById('runsCount').textContent = runs.length ? 'всего ' + runs.length : '';
+  if (!runs.length) { list.innerHTML = '<div class="empty">Пока пусто. Первая пробежка ждёт 💪</div>'; return; }
+  const best = Math.min(...runs.map(r => r.min / r.km));
+  const sorted = [...runs].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id).slice(0, 7);
+  list.innerHTML = sorted.map(r => `
+    <div class="run-item">
+      <div class="run-km">${r.km.toLocaleString('ru-RU', { maximumFractionDigits: 2 })}<small>км</small></div>
+      <div class="run-info">
+        <b>${cap(dateText(r.date, { weekday: 'short', day: 'numeric', month: 'long' }))}${runs.length > 1 && r.min / r.km === best ? '<span class="tag">⚡ лучший темп</span>' : ''}</b>
+        <span class="small">${clockText(r.min * 60000)} · ${pace(r.km, r.min)} /км</span>
+      </div>
+      <button class="del" onclick="deleteRun(${r.id})" aria-label="Удалить">×</button>
+    </div>`).join('');
+}
+
+/* ============ ПЛАН ТРЕНИРОВОК ============ */
+// 52 недели, 4 фазы по 13 недель. Каждая 4-я неделя облегчённая, последние 2 — подводка к старту.
+const PHASES = ['База', 'Полумарафон', 'Объём', 'Марафон'];
+const DOT = { run: '#2457D6', strength: '#E07B00', rest: '#C2C6BC' };
+let planWeek = 1, planSel = 0;
+
+function planStart() { return mondayOf(parseISO(settings.start)); }
+function weekOf(iso) { return Math.floor((mondayOf(parseISO(iso)) - planStart()) / DAY / 7) + 1; }
+function currentWeek() { return Math.min(52, Math.max(1, weekOf(todayISO()))); }
+function todayIdx() { return (new Date().getDay() + 6) % 7; }
+function isoOf(week, idx) {
+  const d = new Date(planStart().getTime() + ((week - 1) * 7 + idx) * DAY + 12 * 3600000);
+  return d.toISOString().slice(0, 10);
+}
+function kmOn(iso) { return runs.filter(r => r.date === iso).reduce((s, r) => s + r.km, 0); }
+
+function weekPlan(w) {
+  const phase = Math.min(3, Math.floor((w - 1) / 13));
+  let f = w % 4 === 0 ? 0.75 : 1;           // разгрузочная неделя
+  if (w === 51) f = 0.7;                    // подводка
+  if (w === 52) f = 0.5;
+  const easy = Math.max(3, Math.round(Math.min(10, 4 + (w - 1) * 0.12) * f));
+  const long = Math.max(5, Math.round(Math.min(32, 7 + (w - 1) * 0.5) * f));
+  const fri = phase === 0 || w >= 51
+    ? { type: 'run', km: easy, title: 'Лёгкий бег ' + easy + ' км', short: 'Спокойный темп, можно разговаривать', desc: 'Пульс до 148. Если пульс выше — минута шагом и снова бег.' }
+    : { type: 'run', km: easy, title: 'Темповая ' + easy + ' км', short: 'Разминка, темп «комфортно тяжело», заминка', desc: 'Первые 2 км разминка, потом в темпе «комфортно тяжело» (говорить можно только короткими фразами), последний километр заминка.' };
+  const days = [
+    { type: 'run', km: easy, title: 'Лёгкий бег ' + easy + ' км', short: 'Спокойный темп, можно разговаривать', desc: 'Пульс до 148. Метроном 160. Если пульс выше — минута шагом и снова бег.' },
+    { type: 'rest', title: 'Отдых', short: 'Прогулка и растяжка', desc: 'Прогулка 20–30 минут. Растяжка икр и бёдер 10 минут.' },
+    { type: 'run', km: long, title: 'Длинная ' + long + ' км', short: 'Самый медленный темп недели', desc: 'Самый медленный темп недели. Цель — пробежать всю дистанцию, а не быстро. Возьми воду' + (long >= 15 ? ' и финики.' : '.') },
+    { type: 'strength', title: 'Силовая ' + (phase >= 2 ? 25 : 15) + ' минут', short: 'Ноги и кор, защищает колени', desc: 'Приседания, выпады, подъёмы на носки, ягодичный мост, планка. 3 круга.' },
+    fri,
+    { type: 'rest', title: 'Отдых', short: 'Полный отдых', desc: 'Полный отдых. Сон 8 часов — тоже тренировка.' },
+    { type: 'rest', title: 'Отдых или прогулка', short: 'Можно 30 минут ходьбы', desc: 'Можно 30 минут ходьбы.' }
+  ];
+  if (w === 52) days[6] = { type: 'run', km: 42.2, title: settings.race, short: 'День старта! 🏁', desc: 'День старта. Начни медленнее, чем хочется. Финики каждые 45 минут, вода на каждом пункте.' };
+  return { phase, days, km: days.reduce((s, d) => s + (d.km || 0), 0), light: f < 1 };
+}
+function dayPlan(iso) {
+  const w = weekOf(iso);
+  if (w < 1 || w > 52) return { type: 'rest', title: 'Вне плана', short: 'План начнётся с даты старта цели', desc: '' };
+  return weekPlan(w).days[(parseISO(iso).getDay() + 6) % 7];
+}
+function isDone(iso, d) { return d.type === 'run' ? kmOn(iso) > 0 : !!marks[iso]; }
+
+function shiftWeek(n) {
+  planWeek = Math.min(52, Math.max(1, planWeek + n));
+  renderPlan();
+}
+function pickDay(i) { planSel = i; renderPlan(); }
+function toggleMark(iso) {
+  if (marks[iso]) delete marks[iso]; else marks[iso] = true;
+  store('marks', marks);
+  renderPlan();
+}
+
+function renderPlan() {
+  const wp = weekPlan(planWeek), today = todayISO();
+  document.getElementById('planSub').textContent = 'Неделя ' + planWeek + ' из 52 · ' + PHASES[wp.phase].toLowerCase() + (wp.light ? ' · лёгкая неделя' : '');
+  document.querySelectorAll('#phaseBars div').forEach((el, i) => { el.className = i < wp.phase ? 'on' : i === wp.phase ? 'cur' : ''; });
+  document.querySelectorAll('#phaseNames span').forEach((el, i) => el.classList.toggle('cur', i === wp.phase));
+
+  const from = isoOf(planWeek, 0), to = isoOf(planWeek, 6);
+  document.getElementById('weekLabel').textContent = dateText(from, { day: 'numeric', month: 'short' }) + ' – ' + dateText(to, { day: 'numeric', month: 'short' });
+  document.getElementById('prevWeek').disabled = planWeek <= 1;
+  document.getElementById('nextWeek').disabled = planWeek >= 52;
+  document.getElementById('toToday').style.visibility = planWeek === currentWeek() ? 'hidden' : 'visible';
+
+  // Дни недели
+  const wd = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+  document.getElementById('days').innerHTML = wp.days.map((d, i) => {
+    const iso = isoOf(planWeek, i), done = isDone(iso, d);
+    return `<button class="day${i === planSel ? ' sel' : ''}${iso === today ? ' today' : ''}" onclick="pickDay(${i})">
+      <span class="wd">${wd[i]}</span><span class="n">${parseISO(iso).getDate()}</span>
+      <span class="dot${done ? ' done' : ''}" style="background:${DOT[d.type]}">${done ? '✓' : ''}</span></button>`;
+  }).join('');
+
+  // Выбранный день
+  const d = wp.days[planSel], iso = isoOf(planWeek, planSel);
+  document.getElementById('selDate').textContent = cap(dateText(iso, { weekday: 'long', day: 'numeric', month: 'long' })) + (iso === today ? ' · сегодня' : '');
+  document.getElementById('selTitle').textContent = d.title;
+  document.getElementById('selDesc').textContent = d.desc;
+  const doneBox = document.getElementById('selDone'), act = document.getElementById('selAction');
+  const km = kmOn(iso);
+  doneBox.style.display = 'none'; act.innerHTML = '';
+  if (d.type === 'run') {
+    if (km) {
+      doneBox.style.display = 'block';
+      doneBox.textContent = '✓ Выполнено: ' + num(km) + ' км' + (km >= d.km ? ' 💪' : ' из ' + num(d.km));
+    } else if (iso === today) {
+      act.innerHTML = '<button class="btn-dark" onclick="go(\'run\')">Начать</button>';
+    } else if (iso < today) {
+      act.innerHTML = '<span class="small">Пропущено. Если бегал — добавь вручную на экране «Пробежка».</span>';
+    }
+  } else if (iso <= today) {
+    act.innerHTML = marks[iso]
+      ? '<button class="btn-ghost" onclick="toggleMark(\'' + iso + '\')">✓ Выполнено — отменить</button>'
+      : '<button class="btn-dark" onclick="toggleMark(\'' + iso + '\')">Отметить выполненным</button>';
+  }
+
+  // Итог недели
+  const doneKm = wp.days.reduce((s, x, i) => s + kmOn(isoOf(planWeek, i)), 0);
+  document.getElementById('wkText').textContent = num(doneKm) + ' из ' + num(wp.km) + ' км';
+  document.getElementById('wkBar').style.width = Math.min(100, doneKm / wp.km * 100) + '%';
+  const doneCount = wp.days.filter((x, i) => isDone(isoOf(planWeek, i), x)).length;
+  document.getElementById('wkNote').textContent = 'Выполнено ' + doneCount + ' из 7 дней';
+
+  // Вехи
+  const longest = runs.reduce((m, r) => Math.max(m, r.km), 0);
+  const miles = [
+    { name: 'Первые 10 км без остановки', week: 4, dist: 10 },
+    { name: 'Первый полумарафон', week: 20, dist: 21.1 },
+    { name: 'Контрольный полумарафон', week: 44, dist: null },
+    { name: settings.race, week: 52, dist: 42.2, final: true }
+  ];
+  document.getElementById('miles').innerHTML = miles.map(m => {
+    const when = dateText(isoOf(m.week, 6), { month: 'long', year: 'numeric' });
+    const ok = m.dist && longest >= m.dist;
+    return `<div class="mile${m.final ? ' final' : ''}"><span>${m.name}</span>${ok ? '<span class="ok">✓ есть</span>' : '<span style="color:var(--muted)">' + when + '</span>'}</div>`;
+  }).join('');
+}
+
+/* ============ НАВИГАЦИЯ ============ */
+function go(tab) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === 'screen-' + tab));
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  if (tab === 'main') renderMain();
+  if (tab === 'plan') { planWeek = currentWeek(); planSel = todayIdx(); renderPlan(); }
+  window.scrollTo(0, 0);
+}
+
+/* ============ ПРОБЕЖКИ ============ */
+function addRun(date, km, min) {
+  runs.push({ id: Date.now(), date, km, min });
+  store('runs', runs);
+  toast('Пробежка сохранена ✓');
+  go('main');
+}
+function deleteRun(id) {
+  if (!confirm('Удалить пробежку?')) return;
+  runs = runs.filter(r => r.id !== id);
+  store('runs', runs);
+  renderMain();
+}
+
+/* --- Секундомер --- */
+function elapsed() { return timer.acc + (timer.running ? Date.now() - timer.startedAt : 0); }
+function toggleTimer() {
+  if (timer.running) { timer.acc = elapsed(); timer.running = false; }
+  else { timer.startedAt = Date.now(); timer.running = true; document.getElementById('finishBox').classList.remove('show'); document.getElementById('timerBtns').style.display = 'flex'; }
+  store('timer', timer);
+  renderTimer();
+}
+function showFinish() {
+  if (timer.running) { timer.acc = elapsed(); timer.running = false; store('timer', timer); }
+  document.getElementById('timerBtns').style.display = 'none';
+  document.getElementById('finishBox').classList.add('show');
+  document.getElementById('finishKm').focus();
+  renderTimer();
+}
+function resetTimer() {
+  if (elapsed() > 60000 && !confirm('Сбросить время?')) return;
+  timer = { running: false, startedAt: 0, acc: 0 };
+  store('timer', timer);
+  document.getElementById('finishBox').classList.remove('show');
+  document.getElementById('timerBtns').style.display = 'flex';
+  document.getElementById('finishKm').value = '';
+  renderTimer();
+}
+function saveTimerRun() {
+  const km = Number(document.getElementById('finishKm').value);
+  const p = document.getElementById('finishPreview');
+  if (!(km > 0)) { p.textContent = 'Введи километры'; p.style.color = '#FF8A8A'; return; }
+  const min = elapsed() / 60000;
+  timer = { running: false, startedAt: 0, acc: 0 };
+  store('timer', timer);
+  document.getElementById('finishBox').classList.remove('show');
+  document.getElementById('timerBtns').style.display = 'flex';
+  document.getElementById('finishKm').value = '';
+  p.textContent = '';
+  renderTimer();
+  addRun(todayISO(), km, min);
+}
+function renderTimer() {
+  const ms = elapsed();
+  document.getElementById('clock').textContent = clockText(ms);
+  const st = document.getElementById('timerStatus');
+  st.textContent = timer.running ? '● Идёт пробежка' : ms ? 'Пауза' : 'Готов к старту';
+  st.classList.toggle('live', timer.running);
+  document.getElementById('btnStart').textContent = timer.running ? 'Пауза' : ms ? 'Продолжить' : 'Старт';
+  document.getElementById('btnFinish').disabled = ms < 1000;
+  document.getElementById('navPlay').classList.toggle('running', timer.running);
+}
+setInterval(() => { if (timer.running) renderTimer(); }, 250);
+
+document.getElementById('finishKm').addEventListener('input', e => {
+  const km = Number(e.target.value), p = document.getElementById('finishPreview');
+  p.style.color = 'var(--lime)';
+  p.textContent = km > 0 ? 'Темп: ' + pace(km, elapsed() / 60000) + ' /км' : '';
+});
+
+/* --- Ручной ввод --- */
+function manualValues() {
+  return {
+    date: document.getElementById('mDate').value || todayISO(),
+    km: Number(document.getElementById('mKm').value),
+    sec: Number(document.getElementById('mSec').value),
+    min: Number(document.getElementById('mMin').value) + Number(document.getElementById('mSec').value) / 60
+  };
+}
+function updateManualPreview() {
+  const v = manualValues(), p = document.getElementById('mPreview');
+  p.className = 'preview';
+  p.textContent = v.km > 0 && v.min > 0 ? 'Темп: ' + pace(v.km, v.min) + ' /км' : '';
+}
+function saveManualRun() {
+  const v = manualValues(), p = document.getElementById('mPreview');
+  if (!(v.km > 0) || !(v.min > 0) || v.sec > 59) { p.className = 'preview err'; p.textContent = 'Введи километры и время'; return; }
+  ['mKm', 'mMin', 'mSec'].forEach(id => document.getElementById(id).value = '');
+  p.textContent = '';
+  addRun(v.date, v.km, v.min);
+}
+['mKm', 'mMin', 'mSec'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', updateManualPreview);
+  el.addEventListener('keydown', e => { if (e.key === 'Enter') saveManualRun(); });
+});
+document.getElementById('finishKm').addEventListener('keydown', e => { if (e.key === 'Enter') saveTimerRun(); });
+
+/* ============ ЦЕЛЬ ============ */
+function openGoal() {
+  document.getElementById('gName').value = settings.name;
+  document.getElementById('gTarget').value = settings.target;
+  document.getElementById('gStart').value = settings.start;
+  document.getElementById('gRace').value = settings.race || '';
+  document.getElementById('goalSheet').classList.add('show');
+}
+function closeGoal() { document.getElementById('goalSheet').classList.remove('show'); }
+function saveGoal() {
+  const target = Number(document.getElementById('gTarget').value);
+  settings = {
+    name: document.getElementById('gName').value.trim() || 'Андрей',
+    target: target > 0 ? target : settings.target,
+    start: document.getElementById('gStart').value || settings.start,
+    race: document.getElementById('gRace').value.trim() || 'Марафон Стамбула'
+  };
+  store('settings', settings);
+  closeGoal();
+  renderMain();
+  toast('Цель обновлена ✓');
+}
+
+/* ============ УВЕДОМЛЕНИЕ ============ */
+function toast(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+/* ============ РАБОТА БЕЗ ИНТЕРНЕТА ============ */
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+/* ============ СТАРТ ============ */
+document.getElementById('chefTip').textContent = tips[new Date().getDate() % tips.length];
+document.getElementById('mDate').value = todayISO();
+store('settings', settings);
+renderTimer();
+renderMain();
+</script>
+</body>
+</html>
