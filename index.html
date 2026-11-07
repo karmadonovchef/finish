@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Финиш">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#F3F4EF">
   <link rel="apple-touch-icon" href="icon-180.png">
   <link rel="icon" href="icon-192.png">
@@ -138,6 +138,15 @@
     .mile .ok { color: var(--blue); font-weight: 700; }
     .mile.final { font-weight: 700; }
 
+    .adapt { background: var(--white); border-left: 4px solid var(--lime); border-radius: 12px; padding: 10px 12px; font-size: 13px; font-weight: 600; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip { min-height: 40px; padding: 0 14px; border-radius: 20px; border: 1.5px solid var(--line); background: var(--bg); font-size: 14px; font-weight: 600; }
+    .chip.on { background: var(--lime); border-color: var(--ink); }
+    .chip:disabled { opacity: .3; }
+    .chip.lvl { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 8px 14px; border-radius: 14px; width: 100%; text-align: left; }
+    .chip.lvl small { font-weight: 400; color: var(--muted); font-size: 12px; }
+    .sheet-label { font-size: 13px; font-weight: 700; margin-top: 4px; }
+
     /* ===== Заглушки будущих экранов ===== */
     .soon { align-items: center; text-align: center; padding-top: 80px !important; }
     .soon .icon-box { width: 72px; height: 72px; border-radius: 20px; background: var(--white); margin-bottom: 8px; }
@@ -156,13 +165,15 @@
     /* ===== Окно цели ===== */
     .sheet-bg { position: fixed; inset: 0; background: rgba(22,24,27,.45); display: none; align-items: flex-end; justify-content: center; z-index: 20; }
     .sheet-bg.show { display: flex; }
-    .sheet { background: var(--white); width: 100%; max-width: 430px; border-radius: 24px 24px 0 0; padding: 24px 20px calc(32px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 14px; }
+    .sheet { max-height: 92vh; overflow-y: auto; background: var(--white); width: 100%; max-width: 430px; border-radius: 24px 24px 0 0; padding: 24px 20px calc(32px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 14px; }
 
-    .toast { position: fixed; top: 20px; left: 50%; transform: translate(-50%, -80px); background: var(--ink); color: var(--lime); padding: 12px 20px; border-radius: 20px; font-weight: 600; font-size: 14px; transition: transform .3s; z-index: 30; white-space: nowrap; }
+    .notch-cover { position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top); background: var(--bg); z-index: 15; }
+    .toast { position: fixed; top: calc(20px + env(safe-area-inset-top)); left: 50%; transform: translate(-50%, -80px); background: var(--ink); color: var(--lime); padding: 12px 20px; border-radius: 20px; font-weight: 600; font-size: 14px; transition: transform .3s; z-index: 30; white-space: nowrap; }
     .toast.show { transform: translate(-50%, 0); }
   </style>
 </head>
 <body>
+<div class="notch-cover"></div>
 <div class="phone">
 
   <!-- ================= ГЛАВНАЯ ================= -->
@@ -267,9 +278,12 @@
 
   <!-- ================= БУДУЩИЕ ЭКРАНЫ ================= -->
   <section class="screen" id="screen-plan">
-    <div style="display:flex;flex-direction:column;gap:2px">
-      <span class="small" id="planSub">Неделя 1 из 52 · база</span>
-      <span class="h-title">План тренировок</span>
+    <div class="row">
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <span class="small" id="planSub">Неделя 1 из 52 · база</span>
+        <span class="h-title">План тренировок</span>
+      </div>
+      <button class="chip" onclick="openSetup()">⚙ Настроить</button>
     </div>
 
     <div class="phases" id="phaseBars"><div></div><div></div><div></div><div></div></div>
@@ -284,11 +298,12 @@
       <button id="nextWeek" onclick="shiftWeek(1)" aria-label="Следующая неделя">›</button>
     </div>
 
+    <div class="adapt" id="adaptNote"></div>
     <div class="days" id="days"></div>
     <div class="legend"><span><i style="background:#2457D6"></i>бег</span><span><i style="background:#E07B00"></i>силовая</span><span><i style="background:#C2C6BC"></i>отдых</span></div>
 
     <div class="card" style="padding:18px">
-      <span class="small" id="selDate"></span>
+      <div class="row"><span class="small" id="selDate"></span><button class="link" id="editBtn" onclick="openEdit()">✎ Изменить</button></div>
       <span class="day-title" id="selTitle"></span>
       <span style="font-size:14px;color:var(--muted);line-height:1.45" id="selDesc"></span>
       <div class="done-note" id="selDone" style="display:none"></div>
@@ -341,11 +356,43 @@
 <div class="sheet-bg" id="goalSheet" onclick="if (event.target === this) closeGoal()">
   <div class="sheet">
     <span class="h-title" style="font-size:20px">Цель и профиль</span>
-    <label class="field">Как тебя зовут <input id="gName" type="text" placeholder="Андрей"></label>
+    <label class="field">Как тебя зовут <input id="gName" type="text" placeholder="Твоё имя"></label>
     <label class="field">Цель на год, км <input id="gTarget" type="number" min="1" inputmode="numeric"></label>
     <label class="field">Дата старта цели <input id="gStart" type="date"></label>
     <label class="field">Забег мечты (финал плана) <input id="gRace" type="text" placeholder="Марафон Стамбула"></label>
     <button class="btn-dark" onclick="saveGoal()">Сохранить</button>
+  </div>
+</div>
+
+<!-- ================= ИЗМЕНИТЬ ДЕНЬ ================= -->
+<div class="sheet-bg" id="editSheet" onclick="if (event.target === this) closeSheet('editSheet')">
+  <div class="sheet">
+    <span class="h-title" style="font-size:20px" id="editTitle">Изменить день</span>
+    <span class="sheet-label">Тренировка</span>
+    <div class="chips" id="editKinds"></div>
+    <label class="field" id="editKmWrap">Дистанция, км <input id="editKm" type="number" step="0.5" min="0" inputmode="decimal"></label>
+    <span class="sheet-label">Или поменять местами с днём</span>
+    <div class="chips" id="editSwap"></div>
+    <button class="btn-dark" onclick="saveEdit()">Сохранить</button>
+    <button class="btn-ghost" id="editReset" onclick="resetEdit()">Вернуть как в плане</button>
+  </div>
+</div>
+
+<!-- ================= НАСТРОЙКА ПЛАНА ================= -->
+<div class="sheet-bg" id="setupSheet" onclick="if (event.target === this) closeSheet('setupSheet')">
+  <div class="sheet">
+    <span class="h-title" style="font-size:20px">Настроим план под тебя</span>
+    <span class="small">План подстраивается сам: выполняешь — нагрузка растёт, пропускаешь — повторяем или снижаем.</span>
+    <span class="sheet-label">Твой уровень</span>
+    <div class="chips" id="setupLevel"></div>
+    <span class="sheet-label">В какие дни можешь бегать</span>
+    <div class="chips" id="setupDays"></div>
+    <span class="sheet-label">Длинная пробежка</span>
+    <div class="chips" id="setupLong"></div>
+    <span class="sheet-label">Силовая</span>
+    <div class="chips" id="setupStrength"></div>
+    <span class="preview err" id="setupErr"></span>
+    <button class="btn-dark" onclick="saveSetup()">Построить план</button>
   </div>
 </div>
 
@@ -374,12 +421,26 @@ let runs = load('runs', []).map((r, i) => ({ id: r.id || Date.now() + i, date: r
 
 // Профиль и цель
 const earliest = runs.reduce((m, r) => (r.date < m ? r.date : m), todayISO());
-let settings = load('settings', { name: 'Андрей', target: load('goal', 1200), start: earliest });
+let settings = load('settings', { name: '', target: load('goal', 1200), start: earliest });
 if (!settings.race) settings.race = 'Марафон Стамбула';
 let marks = load('marks', {}); // отметки «выполнено» для силовых и отдыха
 
 // Секундомер: живёт в памяти, поэтому не сбивается при перезагрузке
 let timer = load('timer', { running: false, startedAt: 0, acc: 0 });
+
+/* ============ ПРОВЕРКА ПРОБЕЖКИ ============ */
+// Реальный темп человека: от 2:30 до 20:00 на км. Всё, что быстрее или медленнее, — ошибка ввода.
+const PACE_MIN = 2.5, PACE_MAX = 20;
+function runError(km, min) {
+  if (!(km > 0)) return 'Введи километры';
+  if (km > 100) return 'Больше 100 км? Проверь дистанцию';
+  if (!(min > 0)) return 'Введи время';
+  const p = min / km;
+  if (p < PACE_MIN) return 'Слишком быстро: ' + pace(km, min) + ' /км. Проверь км и время';
+  if (p > PACE_MAX) return 'Слишком медленно: ' + pace(km, min) + ' /км. Проверь км и время';
+  return '';
+}
+function isRealRun(r) { const p = r.min / r.km; return r.km > 0 && p >= PACE_MIN && p <= PACE_MAX; }
 
 /* ============ ФОРМАТЫ ============ */
 function num(n) { return n.toLocaleString('ru-RU', { maximumFractionDigits: 1 }); }
@@ -412,7 +473,7 @@ function goalStats() {
   const expected = settings.target * passed / totalDays;
   const left = Math.max(0, settings.target - done);
   const weeksLeft = Math.max(1, (end - today) / DAY / 7);
-  return { done, end, delta: done - expected, perWeek: left / weeksLeft, left };
+  return { done, end, delta: done - expected, perWeek: left / weeksLeft, left, firstWeek: passed <= 7 };
 }
 function weekKm() {
   const mon = mondayOf(new Date());
@@ -438,10 +499,10 @@ const tips = [
 
 /* ============ ОТРИСОВКА ГЛАВНОЙ ============ */
 function renderMain() {
-  const name = settings.name || 'бегун';
+  const name = settings.name;
   document.getElementById('todayLabel').textContent = cap(new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' }));
-  document.getElementById('hello').textContent = 'Привет, ' + name;
-  document.getElementById('avatar').textContent = name.charAt(0).toUpperCase();
+  document.getElementById('hello').textContent = name ? 'Привет, ' + name : 'Привет!';
+  document.getElementById('avatar').textContent = name ? name.charAt(0).toUpperCase() : '🏃';
 
   // Цель
   const g = goalStats();
@@ -451,6 +512,7 @@ function renderMain() {
   document.getElementById('goalBar').style.width = Math.min(100, g.done / settings.target * 100) + '%';
   const delta = document.getElementById('goalDelta');
   if (g.left === 0) { delta.textContent = 'Цель выполнена! 🎉'; delta.style.color = 'var(--lime)'; }
+  else if (g.firstWeek && g.delta < 0) { delta.textContent = 'Первая неделя — разгоняемся'; delta.style.color = 'var(--lime)'; }
   else if (g.delta >= 0) { delta.textContent = '+' + num(g.delta) + ' км к графику'; delta.style.color = 'var(--lime)'; }
   else { delta.textContent = '−' + num(-g.delta) + ' км от графика'; delta.style.color = '#FFB86B'; }
   document.getElementById('goalWeekly').textContent = g.left ? num(Math.ceil(g.perWeek)) + ' км в неделю' : '';
@@ -470,7 +532,8 @@ function renderMain() {
   }
 
   // Статистика
-  const totKm = runs.reduce((s, r) => s + r.km, 0), totMin = runs.reduce((s, r) => s + r.min, 0);
+  const okRuns = runs.filter(isRealRun);
+  const totKm = okRuns.reduce((s, r) => s + r.km, 0), totMin = okRuns.reduce((s, r) => s + r.min, 0);
   document.getElementById('statWeek').textContent = num(weekKm()) + ' км';
   document.getElementById('statStreak').textContent = streakWeeks() + ' нед.';
   document.getElementById('statPace').textContent = totKm ? pace(totKm, totMin) : '–';
@@ -479,13 +542,14 @@ function renderMain() {
   const list = document.getElementById('runsList');
   document.getElementById('runsCount').textContent = runs.length ? 'всего ' + runs.length : '';
   if (!runs.length) { list.innerHTML = '<div class="empty">Пока пусто. Первая пробежка ждёт 💪</div>'; return; }
-  const best = Math.min(...runs.map(r => r.min / r.km));
+  const real = runs.filter(r => isRealRun(r) && r.km >= 1);
+  const best = real.length > 1 ? Math.min(...real.map(r => r.min / r.km)) : -1;
   const sorted = [...runs].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id).slice(0, 7);
   list.innerHTML = sorted.map(r => `
     <div class="run-item">
       <div class="run-km">${r.km.toLocaleString('ru-RU', { maximumFractionDigits: 2 })}<small>км</small></div>
       <div class="run-info">
-        <b>${cap(dateText(r.date, { weekday: 'short', day: 'numeric', month: 'long' }))}${runs.length > 1 && r.min / r.km === best ? '<span class="tag">⚡ лучший темп</span>' : ''}</b>
+        <b>${cap(dateText(r.date, { weekday: 'short', day: 'numeric', month: 'long' }))}${r.min / r.km === best && r.km >= 1 ? '<span class="tag">⚡ лучший темп</span>' : ''}${!isRealRun(r) ? '<span class="tag" style="background:#F7E3E3;color:var(--red)">проверь</span>' : ''}</b>
         <span class="small">${clockText(r.min * 60000)} · ${pace(r.km, r.min)} /км</span>
       </div>
       <button class="del" onclick="deleteRun(${r.id})" aria-label="Удалить">×</button>
@@ -493,9 +557,28 @@ function renderMain() {
 }
 
 /* ============ ПЛАН ТРЕНИРОВОК ============ */
-// 52 недели, 4 фазы по 13 недель. Каждая 4-я неделя облегчённая, последние 2 — подводка к старту.
+// Как работает план:
+// 1) Настройка: уровень, дни для бега, день длинной, день силовой.
+// 2) Умная подстройка: после каждой недели смотрим, сколько сделано.
+//    ≥80% плана → нагрузка растёт; 50–80% → повторяем; <50% → чуть снижаем.
+// 3) Любой день можно изменить вручную или поменять местами с другим.
 const PHASES = ['База', 'Полумарафон', 'Объём', 'Марафон'];
 const DOT = { run: '#2457D6', strength: '#E07B00', rest: '#C2C6BC' };
+const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+const LEVELS = {
+  new:  { p: 1,  label: 'Новичок',         hint: 'бегаю меньше 3 месяцев' },
+  some: { p: 10, label: 'Бегаю иногда',    hint: '5 км пробегаю спокойно' },
+  exp:  { p: 20, label: 'Бегаю регулярно', hint: '10 км не проблема' }
+};
+const KINDS = [
+  { kind: 'easy', label: 'Лёгкий бег' },
+  { kind: 'long', label: 'Длинная' },
+  { kind: 'tempo', label: 'Темповая' },
+  { kind: 'strength', label: 'Силовая' },
+  { kind: 'rest', label: 'Отдых' }
+];
+let overrides = load('overrides', {}); // ручные правки: { '2026-11-09': { kind: 'long', km: 8 } }
+if (!settings.plan) settings.plan = { level: 'new', runDays: [0, 2, 4], longDay: 2, strengthDay: 3, onboarded: false };
 let planWeek = 1, planSel = 0;
 
 function planStart() { return mondayOf(parseISO(settings.start)); }
@@ -507,28 +590,95 @@ function isoOf(week, idx) {
   return d.toISOString().slice(0, 10);
 }
 function kmOn(iso) { return runs.filter(r => r.date === iso).reduce((s, r) => s + r.km, 0); }
+function paceText(minPerKm) {
+  const s = Math.round(minPerKm * 60);
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
 
-function weekPlan(w) {
+// Темпы из последних 5 пробежек
+function myPaces() {
+  const last = runs.filter(isRealRun).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+  if (last.length < 2) return null;
+  const avg = last.reduce((s, r) => s + r.min, 0) / last.reduce((s, r) => s + r.km, 0);
+  return { easy: paceText(avg + 0.5), long: paceText(avg + 0.75), tempo: paceText(Math.max(3, avg - 0.33)) };
+}
+
+// Один день плана по типу и дистанции
+function makeDay(kind, km, phase, pc) {
+  switch (kind) {
+    case 'easy': return { kind, km, type: 'run', title: 'Лёгкий бег ' + num(km) + ' км', short: 'Спокойный темп, можно разговаривать',
+      desc: 'Пульс до 148. ' + (pc ? 'Темп примерно ' + pc.easy + ' /км. ' : '') + 'Если пульс выше — минута шагом и снова бег.' };
+    case 'long': return { kind, km, type: 'run', title: 'Длинная ' + num(km) + ' км', short: 'Самый медленный темп недели',
+      desc: 'Самый медленный темп недели' + (pc ? ' (около ' + pc.long + ' /км)' : '') + '. Цель — пробежать всю дистанцию, а не быстро. Возьми воду' + (km >= 15 ? ' и финики.' : '.') };
+    case 'tempo': return { kind, km, type: 'run', title: 'Темповая ' + num(km) + ' км', short: 'Разминка, темп «комфортно тяжело», заминка',
+      desc: 'Первые 2 км разминка, потом ' + (pc ? 'в темпе около ' + pc.tempo + ' /км' : 'в темпе «комфортно тяжело»') + ' (говорить можно только короткими фразами), последний километр — заминка.' };
+    case 'strength': return { kind, type: 'strength', title: 'Силовая ' + (phase >= 2 ? 25 : 15) + ' минут', short: 'Ноги и кор, защищает колени',
+      desc: 'Приседания, выпады, подъёмы на носки, ягодичный мост, планка. 3 круга.' };
+    case 'race': return { kind, km: 42.2, type: 'run', title: settings.race, short: 'День старта! 🏁',
+      desc: 'День старта. Начни медленнее, чем хочется. Финики каждые 45 минут, вода на каждом пункте.' };
+    default: return { kind: 'rest', type: 'rest', title: 'Отдых', short: 'Прогулка и растяжка',
+      desc: 'Прогулка 20–30 минут, растяжка икр и бёдер 10 минут. Сон 8 часов — тоже тренировка.' };
+  }
+}
+
+// Неделя по настройкам и уровню нагрузки p (без ручных правок)
+function baseDays(w, p) {
   const phase = Math.min(3, Math.floor((w - 1) / 13));
-  let f = w % 4 === 0 ? 0.75 : 1;           // разгрузочная неделя
-  if (w === 51) f = 0.7;                    // подводка
+  let f = p % 4 === 0 ? 0.75 : 1;           // каждая 4-я ступень — разгрузка
+  if (w === 51) f = 0.7;                    // подводка к старту
   if (w === 52) f = 0.5;
-  const easy = Math.max(3, Math.round(Math.min(10, 4 + (w - 1) * 0.12) * f));
-  const long = Math.max(5, Math.round(Math.min(32, 7 + (w - 1) * 0.5) * f));
-  const fri = phase === 0 || w >= 51
-    ? { type: 'run', km: easy, title: 'Лёгкий бег ' + easy + ' км', short: 'Спокойный темп, можно разговаривать', desc: 'Пульс до 148. Если пульс выше — минута шагом и снова бег.' }
-    : { type: 'run', km: easy, title: 'Темповая ' + easy + ' км', short: 'Разминка, темп «комфортно тяжело», заминка', desc: 'Первые 2 км разминка, потом в темпе «комфортно тяжело» (говорить можно только короткими фразами), последний километр заминка.' };
-  const days = [
-    { type: 'run', km: easy, title: 'Лёгкий бег ' + easy + ' км', short: 'Спокойный темп, можно разговаривать', desc: 'Пульс до 148. Метроном 160. Если пульс выше — минута шагом и снова бег.' },
-    { type: 'rest', title: 'Отдых', short: 'Прогулка и растяжка', desc: 'Прогулка 20–30 минут. Растяжка икр и бёдер 10 минут.' },
-    { type: 'run', km: long, title: 'Длинная ' + long + ' км', short: 'Самый медленный темп недели', desc: 'Самый медленный темп недели. Цель — пробежать всю дистанцию, а не быстро. Возьми воду' + (long >= 15 ? ' и финики.' : '.') },
-    { type: 'strength', title: 'Силовая ' + (phase >= 2 ? 25 : 15) + ' минут', short: 'Ноги и кор, защищает колени', desc: 'Приседания, выпады, подъёмы на носки, ягодичный мост, планка. 3 круга.' },
-    fri,
-    { type: 'rest', title: 'Отдых', short: 'Полный отдых', desc: 'Полный отдых. Сон 8 часов — тоже тренировка.' },
-    { type: 'rest', title: 'Отдых или прогулка', short: 'Можно 30 минут ходьбы', desc: 'Можно 30 минут ходьбы.' }
-  ];
-  if (w === 52) days[6] = { type: 'run', km: 42.2, title: settings.race, short: 'День старта! 🏁', desc: 'День старта. Начни медленнее, чем хочется. Финики каждые 45 минут, вода на каждом пункте.' };
-  return { phase, days, km: days.reduce((s, d) => s + (d.km || 0), 0), light: f < 1 };
+  const easy = Math.max(2, Math.round(Math.min(10, 3 + (p - 1) * 0.15) * f));
+  const long = Math.max(easy + 1, Math.round(Math.min(32, 5 + (p - 1) * 0.5) * f));
+  const { runDays, longDay, strengthDay } = settings.plan;
+  let tempoDay = -1;
+  if (phase >= 1 && w < 51 && runDays.length >= 3) {
+    const dist = d => Math.min(Math.abs(d - longDay), 7 - Math.abs(d - longDay));
+    tempoDay = runDays.filter(d => d !== longDay).sort((a, b) => dist(b) - dist(a))[0];
+  }
+  return [0, 1, 2, 3, 4, 5, 6].map(i => {
+    if (w === 52 && i === 6) return { kind: 'race', km: 42.2 };
+    if (runDays.includes(i)) return i === longDay ? { kind: 'long', km: long } : i === tempoDay ? { kind: 'tempo', km: easy } : { kind: 'easy', km: easy };
+    if (i === strengthDay) return { kind: 'strength' };
+    return { kind: 'rest' };
+  });
+}
+// С ручными правками
+function rawWeek(w, p) {
+  return baseDays(w, p).map((d, i) => overrides[isoOf(w, i)] || d);
+}
+function weekKmPlan(raw) { return raw.reduce((s, d) => s + (d.km || 0), 0); }
+
+// Умная подстройка: проходим по прошедшим неделям и двигаем нагрузку
+function progression() {
+  const cw = currentWeek(), P = [];
+  let p = LEVELS[settings.plan.level].p, last = null;
+  for (let w = 1; w <= 52; w++) {
+    if (w < cw) {
+      P[w] = p;
+      const raw = rawWeek(w, p), planned = weekKmPlan(raw);
+      const done = raw.reduce((s, d, i) => s + kmOn(isoOf(w, i)), 0);
+      const ratio = planned ? done / planned : 1;
+      if (ratio >= 0.8) p++;
+      else if (ratio < 0.5) p = Math.max(1, p - 1);
+      last = ratio;
+    } else {
+      P[w] = p + (w - cw);
+    }
+  }
+  let note;
+  if (cw === 1 || last === null) note = 'Первая неделя — разгоняемся спокойно';
+  else if (last >= 0.8) note = 'Прошлая неделя выполнена на ' + Math.round(last * 100) + '% — нагрузка растёт 📈';
+  else if (last >= 0.5) note = 'Прошлая неделя выполнена на ' + Math.round(last * 100) + '% — повторяем нагрузку';
+  else note = 'Прошлая неделя выполнена на ' + Math.round(last * 100) + '% — немного снижаем нагрузку';
+  return { P, note };
+}
+
+function weekPlan(w, prog) {
+  prog = prog || progression();
+  const p = prog.P[w], phase = Math.min(3, Math.floor((w - 1) / 13)), pc = myPaces();
+  const raw = rawWeek(w, p);
+  const days = raw.map((d, i) => ({ ...makeDay(d.kind, d.km, phase, pc), edited: !!overrides[isoOf(w, i)] }));
+  return { phase, days, km: weekKmPlan(raw), light: p % 4 === 0 && w < 51, note: prog.note };
 }
 function dayPlan(iso) {
   const w = weekOf(iso);
@@ -537,10 +687,7 @@ function dayPlan(iso) {
 }
 function isDone(iso, d) { return d.type === 'run' ? kmOn(iso) > 0 : !!marks[iso]; }
 
-function shiftWeek(n) {
-  planWeek = Math.min(52, Math.max(1, planWeek + n));
-  renderPlan();
-}
+function shiftWeek(n) { planWeek = Math.min(52, Math.max(1, planWeek + n)); renderPlan(); }
 function pickDay(i) { planSel = i; renderPlan(); }
 function toggleMark(iso) {
   if (marks[iso]) delete marks[iso]; else marks[iso] = true;
@@ -553,6 +700,8 @@ function renderPlan() {
   document.getElementById('planSub').textContent = 'Неделя ' + planWeek + ' из 52 · ' + PHASES[wp.phase].toLowerCase() + (wp.light ? ' · лёгкая неделя' : '');
   document.querySelectorAll('#phaseBars div').forEach((el, i) => { el.className = i < wp.phase ? 'on' : i === wp.phase ? 'cur' : ''; });
   document.querySelectorAll('#phaseNames span').forEach((el, i) => el.classList.toggle('cur', i === wp.phase));
+  document.getElementById('adaptNote').textContent = wp.note;
+  document.getElementById('adaptNote').style.display = planWeek === currentWeek() ? 'block' : 'none';
 
   const from = isoOf(planWeek, 0), to = isoOf(planWeek, 6);
   document.getElementById('weekLabel').textContent = dateText(from, { day: 'numeric', month: 'short' }) + ' – ' + dateText(to, { day: 'numeric', month: 'short' });
@@ -560,20 +709,19 @@ function renderPlan() {
   document.getElementById('nextWeek').disabled = planWeek >= 52;
   document.getElementById('toToday').style.visibility = planWeek === currentWeek() ? 'hidden' : 'visible';
 
-  // Дни недели
-  const wd = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
   document.getElementById('days').innerHTML = wp.days.map((d, i) => {
     const iso = isoOf(planWeek, i), done = isDone(iso, d);
     return `<button class="day${i === planSel ? ' sel' : ''}${iso === today ? ' today' : ''}" onclick="pickDay(${i})">
-      <span class="wd">${wd[i]}</span><span class="n">${parseISO(iso).getDate()}</span>
+      <span class="wd">${WD[i]}</span><span class="n">${parseISO(iso).getDate()}</span>
       <span class="dot${done ? ' done' : ''}" style="background:${DOT[d.type]}">${done ? '✓' : ''}</span></button>`;
   }).join('');
 
   // Выбранный день
   const d = wp.days[planSel], iso = isoOf(planWeek, planSel);
   document.getElementById('selDate').textContent = cap(dateText(iso, { weekday: 'long', day: 'numeric', month: 'long' })) + (iso === today ? ' · сегодня' : '');
-  document.getElementById('selTitle').textContent = d.title;
+  document.getElementById('selTitle').innerHTML = d.title + (d.edited ? ' <span class="tag" style="background:var(--blue-soft);color:var(--blue)">изменено</span>' : '');
   document.getElementById('selDesc').textContent = d.desc;
+  document.getElementById('editBtn').style.display = iso >= today && d.kind !== 'race' ? 'block' : 'none';
   const doneBox = document.getElementById('selDone'), act = document.getElementById('selAction');
   const km = kmOn(iso);
   doneBox.style.display = 'none'; act.innerHTML = '';
@@ -595,7 +743,7 @@ function renderPlan() {
   // Итог недели
   const doneKm = wp.days.reduce((s, x, i) => s + kmOn(isoOf(planWeek, i)), 0);
   document.getElementById('wkText').textContent = num(doneKm) + ' из ' + num(wp.km) + ' км';
-  document.getElementById('wkBar').style.width = Math.min(100, doneKm / wp.km * 100) + '%';
+  document.getElementById('wkBar').style.width = Math.min(100, wp.km ? doneKm / wp.km * 100 : 0) + '%';
   const doneCount = wp.days.filter((x, i) => isDone(isoOf(planWeek, i), x)).length;
   document.getElementById('wkNote').textContent = 'Выполнено ' + doneCount + ' из 7 дней';
 
@@ -614,12 +762,108 @@ function renderPlan() {
   }).join('');
 }
 
+/* --- Ручное редактирование дня --- */
+let edit = null;
+function openEdit() {
+  const iso = isoOf(planWeek, planSel), d = weekPlan(planWeek).days[planSel];
+  edit = { iso, kind: d.kind === 'race' ? 'long' : d.kind, km: d.km || 5 };
+  document.getElementById('editTitle').textContent = cap(dateText(iso, { weekday: 'long', day: 'numeric', month: 'long' }));
+  document.getElementById('editKm').value = edit.km;
+  document.getElementById('editReset').style.display = overrides[iso] ? 'block' : 'none';
+  renderEdit();
+  document.getElementById('editSheet').classList.add('show');
+}
+function renderEdit() {
+  document.getElementById('editKinds').innerHTML = KINDS.map(k =>
+    `<button class="chip${k.kind === edit.kind ? ' on' : ''}" onclick="edit.kind='${k.kind}';renderEdit()">${k.label}</button>`).join('');
+  document.getElementById('editKmWrap').style.display = ['easy', 'long', 'tempo'].includes(edit.kind) ? 'flex' : 'none';
+  const today = todayISO();
+  document.getElementById('editSwap').innerHTML = WD.map((w, i) => {
+    const iso = isoOf(planWeek, i);
+    return `<button class="chip" ${iso === edit.iso || iso < today ? 'disabled' : ''} onclick="swapWith(${i})">${w}</button>`;
+  }).join('');
+}
+function closeSheet(id) { document.getElementById(id).classList.remove('show'); }
+function saveEdit() {
+  const km = Number(document.getElementById('editKm').value);
+  const isRun = ['easy', 'long', 'tempo'].includes(edit.kind);
+  if (isRun && !(km > 0)) { document.getElementById('editKm').focus(); return; }
+  overrides[edit.iso] = isRun ? { kind: edit.kind, km: Math.round(km * 10) / 10 } : { kind: edit.kind };
+  store('overrides', overrides);
+  closeSheet('editSheet');
+  renderPlan();
+  toast('День изменён ✓');
+}
+function resetEdit() {
+  delete overrides[edit.iso];
+  store('overrides', overrides);
+  closeSheet('editSheet');
+  renderPlan();
+  toast('Вернули как в плане');
+}
+function swapWith(i) {
+  const prog = progression();
+  const raw = rawWeek(planWeek, prog.P[planWeek]);
+  const a = planSel, isoB = isoOf(planWeek, i);
+  const dayA = raw[a], dayB = raw[i];
+  overrides[edit.iso] = { ...dayB };
+  overrides[isoB] = { ...dayA };
+  store('overrides', overrides);
+  closeSheet('editSheet');
+  planSel = i;
+  renderPlan();
+  toast('Поменяли местами ✓');
+}
+
+/* --- Настройка плана под себя --- */
+let setup = null;
+function openSetup() {
+  setup = JSON.parse(JSON.stringify(settings.plan));
+  renderSetup();
+  document.getElementById('setupSheet').classList.add('show');
+}
+function renderSetup() {
+  document.getElementById('setupLevel').innerHTML = Object.entries(LEVELS).map(([k, l]) =>
+    `<button class="chip lvl${setup.level === k ? ' on' : ''}" onclick="setup.level='${k}';renderSetup()"><b>${l.label}</b><small>${l.hint}</small></button>`).join('');
+  document.getElementById('setupDays').innerHTML = WD.map((w, i) =>
+    `<button class="chip${setup.runDays.includes(i) ? ' on' : ''}" onclick="toggleRunDay(${i})">${w}</button>`).join('');
+  if (!setup.runDays.includes(setup.longDay)) setup.longDay = setup.runDays.includes(5) ? 5 : setup.runDays.includes(6) ? 6 : setup.runDays[setup.runDays.length - 1];
+  document.getElementById('setupLong').innerHTML = setup.runDays.map(i =>
+    `<button class="chip${setup.longDay === i ? ' on' : ''}" onclick="setup.longDay=${i};renderSetup()">${WD[i]}</button>`).join('') || '<span class="small">сначала выбери дни для бега</span>';
+  if (setup.runDays.includes(setup.strengthDay)) setup.strengthDay = -1;
+  document.getElementById('setupStrength').innerHTML =
+    [0, 1, 2, 3, 4, 5, 6].filter(i => !setup.runDays.includes(i)).map(i =>
+      `<button class="chip${setup.strengthDay === i ? ' on' : ''}" onclick="setup.strengthDay=${i};renderSetup()">${WD[i]}</button>`).join('') +
+    `<button class="chip${setup.strengthDay === -1 ? ' on' : ''}" onclick="setup.strengthDay=-1;renderSetup()">Без силовой</button>`;
+  const n = setup.runDays.length, err = document.getElementById('setupErr');
+  err.textContent = n < 2 ? 'Выбери хотя бы 2 дня для бега' : n > 6 ? 'Нужен хотя бы 1 день отдыха' : '';
+}
+function toggleRunDay(i) {
+  const s = setup.runDays;
+  setup.runDays = s.includes(i) ? s.filter(x => x !== i) : [...s, i].sort((a, b) => a - b);
+  renderSetup();
+}
+function saveSetup() {
+  const n = setup.runDays.length;
+  if (n < 2 || n > 6) return;
+  // Ручные правки будущих дней сбрасываем — план строится заново
+  const today = todayISO();
+  for (const iso of Object.keys(overrides)) if (iso >= today) delete overrides[iso];
+  store('overrides', overrides);
+  settings.plan = { ...setup, onboarded: true };
+  store('settings', settings);
+  closeSheet('setupSheet');
+  planWeek = currentWeek(); planSel = todayIdx();
+  renderPlan();
+  toast('План перестроен ✓');
+}
+
 /* ============ НАВИГАЦИЯ ============ */
 function go(tab) {
   document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === 'screen-' + tab));
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   if (tab === 'main') renderMain();
-  if (tab === 'plan') { planWeek = currentWeek(); planSel = todayIdx(); renderPlan(); }
+  if (tab === 'plan') { planWeek = currentWeek(); planSel = todayIdx(); renderPlan(); if (!settings.plan.onboarded) openSetup(); }
   window.scrollTo(0, 0);
 }
 
@@ -664,8 +908,9 @@ function resetTimer() {
 function saveTimerRun() {
   const km = Number(document.getElementById('finishKm').value);
   const p = document.getElementById('finishPreview');
-  if (!(km > 0)) { p.textContent = 'Введи километры'; p.style.color = '#FF8A8A'; return; }
   const min = elapsed() / 60000;
+  const err = elapsed() < 60000 ? 'Пробежка короче минуты — не сохраняем' : runError(km, min);
+  if (err) { p.textContent = err; p.style.color = '#FF8A8A'; return; }
   timer = { running: false, startedAt: 0, acc: 0 };
   store('timer', timer);
   document.getElementById('finishBox').classList.remove('show');
@@ -709,7 +954,8 @@ function updateManualPreview() {
 }
 function saveManualRun() {
   const v = manualValues(), p = document.getElementById('mPreview');
-  if (!(v.km > 0) || !(v.min > 0) || v.sec > 59) { p.className = 'preview err'; p.textContent = 'Введи километры и время'; return; }
+  const err = v.sec > 59 ? 'Секунд не больше 59' : runError(v.km, v.min);
+  if (err) { p.className = 'preview err'; p.textContent = err; return; }
   ['mKm', 'mMin', 'mSec'].forEach(id => document.getElementById(id).value = '');
   p.textContent = '';
   addRun(v.date, v.km, v.min);
@@ -733,7 +979,8 @@ function closeGoal() { document.getElementById('goalSheet').classList.remove('sh
 function saveGoal() {
   const target = Number(document.getElementById('gTarget').value);
   settings = {
-    name: document.getElementById('gName').value.trim() || 'Андрей',
+    ...settings,
+    name: document.getElementById('gName').value.trim(),
     target: target > 0 ? target : settings.target,
     start: document.getElementById('gStart').value || settings.start,
     race: document.getElementById('gRace').value.trim() || 'Марафон Стамбула'

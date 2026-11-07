@@ -1,5 +1,5 @@
 // Сохраняет приложение на телефоне, чтобы оно открывалось даже без интернета
-const CACHE = 'finish-v3';
+const CACHE = 'finish-v5';
 const FILES = ['./', './index.html', './manifest.json', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
